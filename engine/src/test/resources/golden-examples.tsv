@@ -14,3 +14,25 @@
 
 # 利用者の実例
 稼働時刻	VARIABLE	CAMEL	operationTime
+
+# 利用者の実例(2026-11-08 に利用者が会話で送ったもの。期待値は利用者の表記のまま。書き換え禁止)
+従業員数を取得する	METHOD	CAMEL	getEmployeeCount
+広告を表示するか	METHOD	CAMEL	shouldShowAd
+ファイルは作成されているか	METHOD	CAMEL	isFileCreated
+有料プランか	METHOD	CAMEL	isPaidPlan
+正規表現検索は有効か	METHOD	CAMEL	isRegexpSearchEnabled
+
+# コントローラ作成(利用者の実例ではない)。識別子は pollen-notify の実コード由来、日本語句は識別子の意味から整えた推測。
+# 出典: PollenMeasurement.pollenCount / ObservationPoint.externalId / ObservationPoint.latitude / ObservationPoint.longitude /
+#       PollenLevel.lowerBound / ObservationPoint / PollenLevel / NotificationDecision.shouldNotify(上から順に各行に対応)
+花粉数	VARIABLE	CAMEL	pollenCount
+外部ID	VARIABLE	CAMEL	externalId
+緯度	VARIABLE	CAMEL	latitude
+経度	VARIABLE	CAMEL	longitude
+下限値	VARIABLE	CAMEL	lowerBound
+観測地点	CLASS	PASCAL	ObservationPoint
+花粉レベル	CLASS	PASCAL	PollenLevel
+通知すべきか	METHOD	CAMEL	shouldNotify
+
+# 保留: 利用者の実例「花粉通知」は pollen と notify を縮めてつないだ造語に見え、規則で作れない。
+# 辞書に個別対応を足して合わせると過剰適合になるため入れない(利用者の確認待ち)。
