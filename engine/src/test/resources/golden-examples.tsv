@@ -34,5 +34,8 @@
 花粉レベル	CLASS	PASCAL	PollenLevel
 通知すべきか	METHOD	CAMEL	shouldNotify
 
+# コントローラ作成(利用者の実例ではない)。下限値 → lowerBound の対の語(最終レビュー Important-4)。
+上限値	VARIABLE	CAMEL	upperBound
+
 # 保留: 利用者の実例「花粉通知」は pollen と notify を縮めてつないだ造語に見え、規則で作れない。
 # 辞書に個別対応を足して合わせると過剰適合になるため入れない(利用者の確認待ち)。
