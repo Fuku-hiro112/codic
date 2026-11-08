@@ -1,0 +1,16 @@
+# 命名の回帰例。実際の Kuromoji と同梱辞書で NamingEngine を通した先頭候補が、期待と一致すること。
+# 1 行 1 例。列はタブ区切り: 日本語句 / 命名種別(NamingKind) / 表記(NamingCase) / 期待する先頭候補
+# 外れたら期待値を書き換えず、辞書(curated.tsv・user-dictionary.csv)か規則を直す。
+# '#' で始まる行と空行は読み飛ばす。
+
+# 記事の例(https://nelog.jp/codic)
+従業員数を取得する	METHOD	SNAKE	get_employee_count
+ページタイトルを取得する	METHOD	SNAKE	get_page_title
+広告を表示するか	METHOD	SNAKE	should_show_ad
+ファイルは作成されているか	METHOD	SNAKE	is_file_created
+有料プランか	METHOD	SNAKE	is_paid_plan
+正規表現検索は有効か	METHOD	SNAKE	is_regexp_search_enabled
+ウェブサイトを持っているか	METHOD	SNAKE	has_website
+
+# 利用者の実例
+稼働時刻	VARIABLE	CAMEL	operationTime
