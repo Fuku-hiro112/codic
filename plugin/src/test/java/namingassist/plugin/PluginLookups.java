@@ -6,11 +6,11 @@ import java.util.List;
 import namingassist.engine.Candidate;
 
 /** テストの共通処理。本プラグイン由来の候補は、lookup object が {@link Candidate} のものとして見分ける。 */
-final class PluginLookups {
+public final class PluginLookups {
     private PluginLookups() {
     }
 
-    static List<String> fromPlugin(LookupElement[] elements) {
+    public static List<String> fromPlugin(LookupElement[] elements) {
         if (elements == null) {
             return List.of();
         }

@@ -6,6 +6,10 @@
     Suggests English identifier names from a Japanese phrase typed in the Java editor.
     Type a Japanese phrase (e.g. 稼働時刻) where a name goes and pick an English candidate (operationTime).
     English input is left to the standard completion unchanged. Works offline with bundled dictionaries.
+    User dictionary: Settings | Tools | 日本語→英語 命名.
+    <br/>This package uses the JMdict/EDICT dictionary files (processed for naming).
+    JMdict/EDICT (c) Electronic Dictionary Research and Development Group, CC BY-SA 4.0
+    (<a href="https://www.edrdg.org/edrdg/licence.html">licence</a>).
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
@@ -14,5 +18,9 @@
     <extensions defaultExtensionNs="com.intellij">
         <completion.contributor language="JAVA"
                                 implementationClass="namingassist.plugin.JapaneseNamingContributor"/>
+        <applicationConfigurable parentId="tools"
+                                 instance="namingassist.plugin.settings.UserDictionaryConfigurable"
+                                 id="namingassist.userDictionary"
+                                 displayName="日本語→英語 命名"/>
     </extensions>
 </idea-plugin>
