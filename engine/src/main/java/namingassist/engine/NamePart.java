@@ -10,6 +10,12 @@ import java.util.List;
  */
 public record NamePart(String text, List<String> alternatives, boolean resolved) {
     public NamePart {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("text must not be empty");
+        }
+        if (alternatives == null) {
+            throw new IllegalArgumentException("alternatives must not be null");
+        }
         alternatives = List.copyOf(alternatives);
     }
 }
