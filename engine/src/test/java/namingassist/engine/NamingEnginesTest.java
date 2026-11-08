@@ -27,6 +27,31 @@ class NamingEnginesTest {
         assertEquals("fetchPageTitle", top(engine));
     }
 
+    /** 利用者の層に登録した複合語は、Kuromoji が分けても 1 語として引く(最終レビュー Important-1)。 */
+    @Test
+    void userCompoundWordIsUsedAsOneWord() {
+        Dictionary user = word -> "在庫引当".equals(word)
+            ? Optional.of(new DictionaryEntry("在庫引当", List.of("stock allocation")))
+            : Optional.empty();
+        NamingEngine engine = NamingEngines.createStandard(user);
+        assertEquals("getStockAllocation",
+            engine.suggest("在庫引当を取得する", NamingKind.METHOD).get(0).rendered());
+        assertEquals("stockAllocation", engine.suggest("在庫引当", NamingKind.VARIABLE).get(0).rendered());
+        assertEquals("stockAllocationCount",
+            engine.suggest("在庫引当数", NamingKind.VARIABLE).get(0).rendered());
+    }
+
+    /** 複合語の照合は最長一致。短い方の登録があっても、長い方の登録が勝つ。 */
+    @Test
+    void longestUserCompoundWins() {
+        java.util.Map<String, List<String>> words = java.util.Map.of(
+            "在庫引当", List.of("stock allocation"),
+            "在庫引当日", List.of("allocation date"));
+        Dictionary user = word -> Optional.ofNullable(words.get(word)).map(t -> new DictionaryEntry(word, t));
+        NamingEngine engine = NamingEngines.createStandard(user);
+        assertEquals("allocationDate", engine.suggest("在庫引当日", NamingKind.VARIABLE).get(0).rendered());
+    }
+
     private static String top(NamingEngine engine) {
         List<Candidate> candidates = engine.suggest(PHRASE, NamingKind.VARIABLE);
         return candidates.get(0).rendered();

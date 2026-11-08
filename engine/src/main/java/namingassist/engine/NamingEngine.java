@@ -24,6 +24,15 @@ public final class NamingEngine {
         this.composer = new PhraseComposer(dictionary);
     }
 
+    /**
+     * @param compounds 複合語として照合する辞書(利用者の層)。Kuromoji が分けた連続する語をつないだ文字列が
+     *                  ここにあれば 1 語として引く({@link PhraseComposer#PhraseComposer(Dictionary, Dictionary)})
+     */
+    public NamingEngine(Tokenizer tokenizer, Dictionary dictionary, Dictionary compounds) {
+        this.tokenizer = tokenizer;
+        this.composer = new PhraseComposer(dictionary, compounds);
+    }
+
     /** 候補を優先順に最大 10 件返す。作れないときは空。Java の識別子にならない名前は除く。 */
     public List<Candidate> suggest(String japanesePhrase, NamingKind kind) {
         return suggest(japanesePhrase, kind, () -> false);

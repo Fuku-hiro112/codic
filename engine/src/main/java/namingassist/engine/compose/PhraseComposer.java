@@ -37,14 +37,29 @@ public final class PhraseComposer {
     private static final Set<String> NON_INDEPENDENT_VERBS = Set.of("いる", "しまう", "おく");
     private static final Set<String> PLURAL_MARKERS = Set.of("s", "ｓ");
 
+    /** 複合語として照合する連続した語の数の上限。 */
+    private static final int MAX_COMPOUND_TOKENS = 8;
+    private static final Dictionary NO_COMPOUNDS = word -> Optional.empty();
+
     private final Dictionary dictionary;
+    private final Dictionary compounds;
 
     public PhraseComposer(Dictionary dictionary) {
+        this(dictionary, NO_COMPOUNDS);
+    }
+
+    /**
+     * @param compounds 複合語の辞書(利用者の層)。連続する名詞・英数字の語をつないだ文字列が、ここに最長一致で
+     *                  見つかれば 1 語として扱う(Kuromoji が「在庫引当」を 在庫/引当 に分けても 1 語で引く)
+     */
+    public PhraseComposer(Dictionary dictionary, Dictionary compounds) {
         this.dictionary = dictionary;
+        this.compounds = compounds;
     }
 
     /** 候補を優先順に返す。全語が未登録なら空。「か」で終わる句は真偽値の形にする({@link BooleanRule})。 */
-    public Stream<EnglishName> compose(List<Token> tokens) {
+    public Stream<EnglishName> compose(List<Token> analyzed) {
+        List<Token> tokens = mergeCompounds(analyzed);
         Optional<BooleanRule.Form> bool = BooleanRule.of(tokens);
         Clause clause = clause(bool.map(BooleanRule.Form::body).orElse(tokens));
         List<Slot> slots = bool.map(form -> booleanSlots(form, clause)).orElseGet(clause::ordered);
@@ -57,6 +72,46 @@ public final class PhraseComposer {
         }
         return Stream.iterate(new int[slots.size()], c -> c != null, c -> next(c, slots))
             .map(choice -> toName(choice, slots));
+    }
+
+    // ---- 複合語: 連続する語を最長一致で 1 語にまとめる ----
+
+    private List<Token> mergeCompounds(List<Token> tokens) {
+        List<Token> merged = new ArrayList<>();
+        int i = 0;
+        while (i < tokens.size()) {
+            int end = longestCompoundEnd(tokens, i);
+            if (end > i + 1) {
+                StringBuilder surface = new StringBuilder();
+                tokens.subList(i, end).forEach(t -> surface.append(t.surface()));
+                merged.add(new Token(surface.toString(), surface.toString(), Pos.NOUN));
+                i = end;
+            } else {
+                merged.add(tokens.get(i));
+                i++;
+            }
+        }
+        return merged;
+    }
+
+    /** start から続く名詞・英数字の語のうち、つないだ文字列が複合語の辞書にある最長の終わり。無ければ start。 */
+    private int longestCompoundEnd(List<Token> tokens, int start) {
+        int limit = start;
+        while (limit < tokens.size() && limit - start < MAX_COMPOUND_TOKENS && isCompoundPart(tokens.get(limit))) {
+            limit++;
+        }
+        for (int end = limit; end > start + 1; end--) {
+            StringBuilder s = new StringBuilder();
+            tokens.subList(start, end).forEach(t -> s.append(t.surface()));
+            if (compounds.lookup(s.toString()).isPresent()) {
+                return end;
+            }
+        }
+        return start;
+    }
+
+    private static boolean isCompoundPart(Token t) {
+        return t.pos() == Pos.NOUN || (t.pos() == Pos.OTHER && isLatin(t.surface()));
     }
 
     // ---- 先頭の枠: 識別子の先頭に置ける訳だけにする ----

@@ -14,11 +14,13 @@ public final class NamingEngines {
     /**
      * Kuromoji と、層 利用者 → curated → jmdict の辞書で組み立てる。同梱辞書はクラスパスから読む。
      *
+     * 利用者の層は複合語の照合にも使う(Kuromoji が分ける「在庫引当」も、登録すれば 1 語で引く)。
+     *
      * @param userLayer 最優先の利用者の層(呼び出し側が持つ。無ければ空の辞書を渡す)
      */
     public static NamingEngine createStandard(Dictionary userLayer) {
         Dictionary dictionary = new LayeredDictionary(
             List.of(userLayer, TsvDictionary.curated(), TsvDictionary.jmdict()));
-        return new NamingEngine(new KuromojiTokenizer(), dictionary);
+        return new NamingEngine(new KuromojiTokenizer(), dictionary, userLayer);
     }
 }

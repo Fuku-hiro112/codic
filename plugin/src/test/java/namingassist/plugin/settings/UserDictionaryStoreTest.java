@@ -78,6 +78,13 @@ public class UserDictionaryStoreTest extends BasePlatformTestCase {
         assertEquals("保存後は利用者辞書の fetch が先頭", "fetchPageTitle", firstPluginItem(PAGE_TITLE));
     }
 
+    /** 保存した複合語(Kuromoji は 在庫/引当 に分ける)が、1 語として次の補完の先頭に出る。 */
+    public void testSavedCompoundWordComesFirstOnNextCompletion() throws IOException {
+        tempStore().save(List.of(new DictionaryEntry("在庫引当", List.of("stock allocation"))));
+
+        assertEquals("getStockAllocation", firstPluginItem("在庫引当を取得する"));
+    }
+
     /** 起動時(サービスの最初の組み立て)に、設定フォルダに保存済みの利用者辞書を読む。 */
     public void testSavedDictionaryIsUsedAtStartup() throws IOException {
         Files.writeString(UserDictionaryStore.defaultFile(), "取得\tfetch\n", StandardCharsets.UTF_8);
