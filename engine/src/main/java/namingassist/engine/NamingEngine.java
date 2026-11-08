@@ -1,5 +1,6 @@
 package namingassist.engine;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,7 +51,9 @@ public final class NamingEngine {
         NamingCase c = kind.defaultCase();
         List<Candidate> candidates = new ArrayList<>();
         Set<String> seen = new HashSet<>();
-        Iterator<EnglishName> names = composer.compose(tokenizer.tokenize(japanesePhrase.strip()))
+        // 全角英数字(ＩＤ)・半角カタカナを、辞書と Kuromoji が引ける形にそろえる
+        String normalized = Normalizer.normalize(japanesePhrase, Normalizer.Form.NFKC).strip();
+        Iterator<EnglishName> names = composer.compose(tokenizer.tokenize(normalized))
             .limit(MAX_SCANNED).iterator();
         while (candidates.size() < MAX_CANDIDATES && names.hasNext()) {
             if (canceled.getAsBoolean()) {

@@ -52,6 +52,14 @@ class NamingEnginesTest {
         assertEquals("allocationDate", engine.suggest("在庫引当日", NamingKind.VARIABLE).get(0).rendered());
     }
 
+    /** 全角英数字・半角カタカナは NFKC で正規化してから解析する(最終レビュー Important-3)。 */
+    @Test
+    void fullWidthLatinAndHalfWidthKanaAreNormalized() {
+        NamingEngine engine = NamingEngines.createStandard(word -> Optional.empty());
+        assertEquals("getId", engine.suggest("ＩＤを取得する", NamingKind.METHOD).get(0).rendered());
+        assertEquals("getPageTitle", engine.suggest("ﾍﾟｰｼﾞﾀｲﾄﾙを取得する", NamingKind.METHOD).get(0).rendered());
+    }
+
     private static String top(NamingEngine engine) {
         List<Candidate> candidates = engine.suggest(PHRASE, NamingKind.VARIABLE);
         return candidates.get(0).rendered();
