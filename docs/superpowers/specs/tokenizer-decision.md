@@ -32,12 +32,40 @@
   条件: 「NO WARRANTY」(第3項)を常に付すこと、ほぼ同じ形式で頒布すること、各国の法令に反しないこと。
   頒布者は利用者への損害責任を免れる(別途の書面保証を除く)。
 
-判断: プラグインへの同梱・再配布は可能(条件付き)。
-- 条件を満たす作業(Task 7 の配布物で行う): Apache-2.0 の LICENSE と Kuromoji の NOTICE、
-  IPADIC の NOTICE 全文(NO WARRANTY 条項を含む)を配布物に同梱する。
-- 未確認: WebFetch は要約で返るため、IPADIC 通知の全文の逐語確認はしていない。
-  配布前に NOTICE.md の全文をそのまま同梱物へコピーすること。
-  また「バイナリ同梱」への言及は通知の抜粋に無かった(一般の「Program の頒布」条件を適用と解釈=推測)。
+判断(Task 2 時点): プラグインへの同梱・再配布は可能(条件付き)と見込んだ。
+上の要約は WebFetch の要約で、逐語確認ではなかった。Task 11a で次のとおり原文を確かめた。
+
+### 逐語確認(Task 11a、2026-11-08)
+
+原文を curl で取得し、バイト列で比較した(要約ツールは使っていない)。
+
+確認済み:
+- Kuromoji の LICENSE.md(GitHub master)は、Maven Central の `kuromoji-core-0.9.0.jar` と
+  `kuromoji-ipadic-0.9.0.jar` の `META-INF/LICENSE.md` とバイト単位で同一(SHA-256 76b21bab…)。
+  中身は Apache License 2.0 の全文(行頭 4 字下げ。https://www.apache.org/licenses/LICENSE-2.0.txt と空白を除き一致)。
+- jar は Maven Central の `.sha1` と一致し、Gradle キャッシュの jar とも同一。
+- `kuromoji-ipadic-0.9.0.jar` には `META-INF/NOTICE.md` がある。GitHub の `kuromoji-ipadic/NOTICE.md` とは
+  著作権表示の年(jar: 2010-2015、GitHub: 2010-2018)だけが異なる。`kuromoji-core-0.9.0.jar` に NOTICE は無い。
+- Kuromoji の IPADIC NOTICE は mecab-ipadic の `COPYING` の**抜粋**だった。冒頭の著作権表示
+  「Copyright 2000, 2001, 2002, 2003 Nara Institute of Science and Technology. All Rights Reserved.」と、
+  許諾の段落「Use, reproduction, and distribution of this software is permitted. Any copy of this software,
+  whether in its original form or modified, must include both the above copyright notice and the following paragraphs.」
+  が NOTICE には無い。原本は NOTICE が示す入手先の `mecab-ipadic-2.7.0-20070801.tar.gz` の `COPYING` で確認し、
+  https://raw.githubusercontent.com/taku910/mecab/master/mecab-ipadic/COPYING とバイト単位で同一だった。
+- 条件(原文から): (1) NAIST: どの複製にも、著作権表示とそれに続く段落を含めること。
+  (2) ICOT: 第三者への頒布は自由。ただし「NO WARRANTY」の条項を常にプログラムに表示または添付すること、
+  ほぼ同じ形式で頒布すること、関係国の法令に反しないこと。「バイナリ」という語は原文に無い。
+- 対応: 上の全文(Apache 2.0、NOTICE、CONTRIBUTORS、mecab-ipadic の COPYING 全文)を
+  `plugin/src/main/resources/THIRD-PARTY-NOTICES.md` に原文のまま入れ、配布 zip の plugin の jar に含めた。
+  Kuromoji の jar は無改変で `lib/` に入り、jar 自身の `META-INF/LICENSE.md`・`NOTICE.md` もそのまま配布される。
+
+判断: 同梱・再配布は、上の通知を添えることで条件を満たすと解釈する(法的助言ではない)。
+
+未確認(または解釈に依る):
+- jar の辞書データが本当に mecab-ipadic-2.7.0-20070801 から作られたかは、Kuromoji の NOTICE の記述に依る(自分で作り直して照合していない)。
+- ICOT Free Software の原本の許諾条件(COPYING が「Section 3」と呼ぶ元の文書)は入手していない。COPYING に引用された部分だけを確認した。
+- 「プログラムに表示または添付」を、zip 内の jar に入った通知文書で満たすか。jar のバイナリ辞書を「ほぼ同じ形式」と言えるか。
+  いずれも解釈の問題で、利用者に要確認。
 
 ## 初回ロード時間の実測(Step 5)
 
