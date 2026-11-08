@@ -18,6 +18,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <completion.contributor language="JAVA"
                                 implementationClass="namingassist.plugin.JapaneseNamingContributor"/>
+        <lookup.actionProvider implementation="namingassist.plugin.edit.EditActionProvider"/>
         <applicationConfigurable parentId="tools"
                                  instance="namingassist.plugin.settings.UserDictionaryConfigurable"
                                  id="namingassist.userDictionary"
