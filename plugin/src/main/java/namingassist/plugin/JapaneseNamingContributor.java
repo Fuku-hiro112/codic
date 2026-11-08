@@ -3,8 +3,10 @@ package namingassist.plugin;
 import com.intellij.codeInsight.completion.CompletionContributor;
 import com.intellij.codeInsight.completion.CompletionParameters;
 import com.intellij.codeInsight.completion.CompletionResultSet;
+import com.intellij.codeInsight.completion.PrioritizedLookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.application.ApplicationManager;
+import java.util.List;
 import namingassist.engine.Candidate;
 import namingassist.engine.NamingKind;
 import org.jetbrains.annotations.NotNull;
@@ -27,10 +29,15 @@ public final class JapaneseNamingContributor extends CompletionContributor {
         // 候補は句全体で決まる(「稼」では空、「稼働時刻」で operationTime)。空でも打ち足すたびに作り直す。
         result.restartCompletionOnAnyPrefixChange();
         NamingKind kind = kindResolver.resolve(parameters.getPosition());
-        for (Candidate candidate : service.engine().suggest(prefix, kind)) {
-            result.addElement(LookupElementBuilder.create(candidate, candidate.rendered())
+        // 候補はすべて同じ句に一致して重みが並ぶので、engine の優先順を降順の優先度で渡す(無いと辞書順に落ちる)。
+        List<Candidate> candidates = service.engine().suggest(prefix, kind);
+        int count = candidates.size();
+        for (int i = 0; i < count; i++) {
+            Candidate candidate = candidates.get(i);
+            LookupElementBuilder element = LookupElementBuilder.create(candidate, candidate.rendered())
                 .withLookupString(prefix)
-                .withTypeText(prefix));
+                .withTypeText(prefix);
+            result.addElement(PrioritizedLookupElement.withPriority(element, count - i));
         }
     }
 
