@@ -32,6 +32,10 @@ dependencies {
 }
 
 intellijPlatform {
+    // 設定画面は 1 つだけで検索の恩恵がほぼ無い。生成物(searchableOptions jar)には生成時の IDE の
+    // 保存先パス(開発機の絶対パス)が入るので、配布物に入れないよう作らない。
+    buildSearchableOptions = false
+
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "252"

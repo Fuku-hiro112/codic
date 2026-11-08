@@ -3,7 +3,9 @@ package namingassist.plugin.settings;
 import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.options.ConfigurationException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,13 +47,24 @@ public final class UserDictionaryStore {
         return file;
     }
 
+    /** 保存の直前に元のファイルを退避する先(直前 1 世代)。 */
+    public Path backupFile() {
+        return file.resolveSibling(file.getFileName() + ".bak");
+    }
+
     /** 読む。無い・壊れているときは空で、理由は {@link UserDictionary#warnings()}。 */
     public UserDictionary load() {
         return new UserDictionary(file);
     }
 
-    /** 全項目を書き換えて保存し、次の補完から使う(再起動は要らない)。 */
+    /**
+     * 全項目を書き換えて保存し、次の補完から使う(再起動は要らない)。保存は一覧の内容で置き換えるため、
+     * 読めなかった行・コメント行は消える。元のファイルがあれば {@link #backupFile()} にそのまま退避する。
+     */
     public void save(List<DictionaryEntry> entries) throws IOException {
+        if (Files.exists(file)) {
+            Files.copy(file, backupFile(), StandardCopyOption.REPLACE_EXISTING);
+        }
         UserDictionary dictionary = new UserDictionary(file);
         dictionary.save(entries);
         engines.replaceUserLayer(dictionary);

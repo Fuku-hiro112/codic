@@ -102,6 +102,41 @@ public class UserDictionaryStoreTest extends BasePlatformTestCase {
         assertEquals("operationTime", firstPluginItem("稼働時刻"));
     }
 
+    /** 壊れたファイルを保存で上書きしても、元のバイト列が .bak に残る。 */
+    public void testSaveKeepsBrokenFileAsBackup() throws IOException {
+        UserDictionaryStore store = tempStore();
+        byte[] broken = {(byte) 0xff, (byte) 0xfe, (byte) 0xc3, 0x28};
+        Files.write(store.file(), broken);
+
+        store.save(List.of(new DictionaryEntry("取得", List.of("fetch"))));
+
+        assertOrderedEquals(Files.readAllBytes(store.backupFile()), broken);
+        assertEquals("取得\tfetch\n", Files.readString(store.file(), StandardCharsets.UTF_8));
+    }
+
+    /** 手で書いたコメント行は保存で消えるが、.bak に残る。 */
+    public void testSaveKeepsCommentedFileAsBackup() throws IOException {
+        UserDictionaryStore store = tempStore();
+        String original = "# 自分用のメモ\n取得\tfetch\n\n";
+        Files.writeString(store.file(), original, StandardCharsets.UTF_8);
+
+        store.save(List.of(new DictionaryEntry("取得", List.of("retrieve"))));
+
+        assertEquals(original, Files.readString(store.backupFile(), StandardCharsets.UTF_8));
+    }
+
+    /** ファイルが無いときの保存では .bak を作らない。 */
+    public void testSaveWithoutFileCreatesNoBackup() throws IOException {
+        UserDictionaryStore store = tempStore();
+        assertFalse(Files.exists(store.file()));
+
+        store.save(List.of(new DictionaryEntry("取得", List.of("fetch"))));
+
+        assertTrue(Files.exists(store.file()));
+        assertFalse(Files.exists(store.backupFile()));
+        assertEquals("japanese-naming-user-dictionary.tsv.bak", store.backupFile().getFileName().toString());
+    }
+
     public void testRowsToEntriesSplitsTranslationsByComma() throws ConfigurationException {
         List<DictionaryEntry> entries = UserDictionaryStore.toEntries(List.of(
             new UserDictionaryStore.Row(" 取得 ", "fetch, retrieve ,"),

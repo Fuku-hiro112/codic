@@ -202,7 +202,8 @@ public final class UserDictionaryConfigurable implements Configurable {
         showRows(UserDictionaryStore.toRows(loaded.entries()));
         List<String> warnings = loaded.warnings();
         warningLabel.setText(warnings.isEmpty() ? "" : "<html>" + String.join("<br>", warnings)
-            + "<br>読めた語だけを表示しています。保存するとファイルはこの一覧の内容で置き換わります。</html>");
+            + "<br>読めた語だけを表示しています。保存するとファイルはこの一覧の内容で置き換わります。"
+            + "<br>元のファイルは " + store.backupFile() + " に残ります。</html>");
         warningLabel.setVisible(!warnings.isEmpty());
     }
 
