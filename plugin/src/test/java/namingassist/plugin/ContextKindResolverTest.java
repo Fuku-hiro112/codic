@@ -89,6 +89,22 @@ public class ContextKindResolverTest extends BasePlatformTestCase {
         assertOutcome("interface I { int <caret> = 0; }", NamingKind.CONSTANT, "OPERATION_TIME");
     }
 
+    /**
+     * インタフェース・アノテーション型の中で初期化子の無い宣言は、名前の後に「()」を打つ前のメソッドであることが多い。
+     * 暗黙の static final だけを根拠に定数にしない(変数に落とす)。
+     */
+    public void testInterfaceMemberWithoutInitializerIsNotConstant() {
+        assertOutcome("interface I { String <caret> }", NamingKind.VARIABLE, "operationTime");
+        assertOutcome("interface I { int <caret> }", NamingKind.VARIABLE, "operationTime");
+        assertOutcome("@interface A { String <caret> }", NamingKind.VARIABLE, "operationTime");
+    }
+
+    /** 明示の static final は初期化子が無くても定数(クラス内・インタフェース内とも)。 */
+    public void testExplicitStaticFinalWithoutInitializerIsConstant() {
+        assertOutcome("class A { static final int <caret> }", NamingKind.CONSTANT, "OPERATION_TIME");
+        assertOutcome("interface I { static final int <caret> }", NamingKind.CONSTANT, "OPERATION_TIME");
+    }
+
     /** 名前の直後に「(」がある。補完用コピーでは「名前;」と解析されフィールドに見えるので、次の字で見分ける。 */
     public void testMethodName() {
         assertOutcome("class A { void <caret>() { } }", NamingKind.METHOD, "operationTime");

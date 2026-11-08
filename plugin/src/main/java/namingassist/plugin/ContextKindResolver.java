@@ -8,6 +8,7 @@ import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiJavaToken;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifier;
+import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiNameIdentifierOwner;
 import com.intellij.psi.PsiTypes;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -19,7 +20,7 @@ import namingassist.engine.NamingKind;
  *   <li>クラスの宣言名 → CLASS</li>
  *   <li>メソッドの宣言名 → METHOD。メソッド名の位置では、補完用コピーに「名前;」が入りフィールドとして解析される
  *       (実測)。そのため、フィールドの直後が「(」か、型が void のフィールドをメソッドとみなす。</li>
- *   <li>{@code static final} のフィールド(インタフェースの暗黙のものを含む) → CONSTANT</li>
+ *   <li>{@code static final} のフィールド → CONSTANT。インタフェース等の暗黙の static final は初期化子があるときだけ。</li>
  *   <li>それ以外(ローカル変数・フィールド・判定できない位置) → VARIABLE</li>
  * </ul>
  */
@@ -43,11 +44,28 @@ public final class ContextKindResolver {
             if (looksLikeMethod(field)) {
                 return NamingKind.METHOD;
             }
-            if (field.hasModifierProperty(PsiModifier.STATIC) && field.hasModifierProperty(PsiModifier.FINAL)) {
+            if (isConstant(field)) {
                 return NamingKind.CONSTANT;
             }
         }
         return NamingKind.VARIABLE;
+    }
+
+    /**
+     * static final のフィールド。ただし、インタフェース・アノテーション型の暗黙の static final だけで初期化子も無いものは
+     * 「()」を打つ前のメソッドであることが多いので定数にしない。明示の static final か、初期化子があれば定数。
+     */
+    private static boolean isConstant(PsiField field) {
+        if (!field.hasModifierProperty(PsiModifier.STATIC) || !field.hasModifierProperty(PsiModifier.FINAL)) {
+            return false;
+        }
+        if (field.getInitializer() != null) {
+            return true;
+        }
+        PsiModifierList modifiers = field.getModifierList();
+        return modifiers != null
+            && modifiers.hasExplicitModifier(PsiModifier.STATIC)
+            && modifiers.hasExplicitModifier(PsiModifier.FINAL);
     }
 
     /** フィールドに見えるが、実はメソッドの宣言名: 直後が「(」、または型が void(フィールドでは書けない)。 */
