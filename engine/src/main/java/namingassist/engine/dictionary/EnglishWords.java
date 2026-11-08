@@ -7,7 +7,9 @@ import java.util.List;
 public final class EnglishWords {
     private EnglishWords() {}
 
+    /** 空白とハイフンで分け、アポストロフィは落とす(time-stamp → time stamp、o'clock → oclock)。 */
     public static List<String> split(String translation) {
-        return Arrays.stream(translation.trim().split("\\s+")).filter(w -> !w.isEmpty()).toList();
+        String normalized = translation.replace('-', ' ').replace("'", "");
+        return Arrays.stream(normalized.trim().split("\\s+")).filter(w -> !w.isEmpty()).toList();
     }
 }

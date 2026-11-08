@@ -117,6 +117,15 @@ class DictionaryTest {
         assertEquals(2, parts.size());
     }
 
+    @Test
+    void hyphenSplitsWordsAndApostropheIsDropped() {
+        assertEquals(List.of("time", "stamp"), EnglishWords.split("time-stamp"));
+        assertEquals(List.of("built", "in"), EnglishWords.split("built-in"));
+        assertEquals(List.of("check", "in", "time"), EnglishWords.split("check-in time"));
+        assertEquals(List.of("oclock"), EnglishWords.split("o'clock"));
+        assertEquals(List.of(), EnglishWords.split("-"));
+    }
+
     private void assertCuratedStillWorks(Dictionary user) {
         Dictionary layered = new LayeredDictionary(List.of(user, TsvDictionary.curated()));
         assertEquals(List.of("get", "fetch"), translations(layered, "取得"));

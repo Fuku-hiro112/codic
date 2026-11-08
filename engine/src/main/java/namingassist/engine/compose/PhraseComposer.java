@@ -52,8 +52,56 @@ public final class PhraseComposer {
             return Stream.empty();
         }
         bool.ifPresent(form -> slots.add(0, new Slot(List.of(List.of(form.prefix())), true)));
+        if (!makeLeadingSlotStartIdentifier(slots)) {
+            return Stream.empty();
+        }
         return Stream.iterate(new int[slots.size()], c -> c != null, c -> next(c, slots))
             .map(choice -> toName(choice, slots));
+    }
+
+    // ---- 先頭の枠: 識別子の先頭に置ける訳だけにする ----
+
+    private static final List<String> NUMBER_WORDS = List.of(
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve");
+
+    /**
+     * 先頭の枠を、識別子の先頭に置ける訳(数字で始まらない)だけにする。どの訳も置けないとき、
+     * 12 以下の数は英語の数詞にし(2段階 → two stage)、それ以外はその枠を次の枠の後ろへ回す。
+     * 名前を作れないなら false。
+     */
+    private static boolean makeLeadingSlotStartIdentifier(List<Slot> slots) {
+        for (int moved = 0; moved < slots.size(); moved++) {
+            Slot first = slots.get(0);
+            List<List<String>> startable = first.choices().stream()
+                .filter(words -> Character.isJavaIdentifierStart(words.get(0).codePointAt(0))).toList();
+            if (!startable.isEmpty()) {
+                slots.set(0, new Slot(startable, first.resolved()));
+                return true;
+            }
+            Optional<String> number = numberWord(first);
+            if (number.isPresent()) {
+                slots.set(0, new Slot(List.of(List.of(number.get())), true));
+                return true;
+            }
+            if (slots.size() < 2) {
+                return false;
+            }
+            slots.add(1, slots.remove(0));
+        }
+        return false;
+    }
+
+    private static Optional<String> numberWord(Slot slot) {
+        if (slot.choices().size() != 1 || slot.choices().get(0).size() != 1) {
+            return Optional.empty();
+        }
+        String s = slot.choices().get(0).get(0);
+        if (s.isEmpty() || s.length() > 2 || !s.chars().allMatch(c -> c >= '0' && c <= '9')) {
+            return Optional.empty();
+        }
+        int n = Integer.parseInt(s);
+        return n < NUMBER_WORDS.size() ? Optional.of(NUMBER_WORDS.get(n)) : Optional.empty();
     }
 
     /** 接頭辞を除いた真偽値の名前の枠。 */
@@ -146,9 +194,14 @@ public final class PhraseComposer {
             .map(DictionaryEntry::translations).orElse(List.of()).stream()
             .filter(tr -> tr != null && !tr.isBlank()) // EnglishWords.split は null を受けない
             .map(EnglishWords::split)
-            .filter(words -> !words.isEmpty())
+            .filter(words -> !words.isEmpty() && words.stream().allMatch(PhraseComposer::isIdentifierPart))
             .toList();
         return choices.isEmpty() ? new Slot(List.of(List.of(key)), false) : new Slot(choices, true);
+    }
+
+    /** 識別子の途中に置ける語か。置けない訳は枠に入れない(組み合わせを作った後で除くと積を全部走査しうる)。 */
+    private static boolean isIdentifierPart(String word) {
+        return word.codePoints().allMatch(Character::isJavaIdentifierPart);
     }
 
     private static boolean isLatin(String s) {
