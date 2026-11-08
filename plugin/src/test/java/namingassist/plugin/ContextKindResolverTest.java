@@ -99,6 +99,14 @@ public class ContextKindResolverTest extends BasePlatformTestCase {
         assertOutcome("@interface A { String <caret> }", NamingKind.VARIABLE, "operationTime");
     }
 
+    /** enum の定数名は定数(UPPER_SNAKE)。 */
+    public void testEnumConstantIsConstant() {
+        assertOutcome("enum E { <caret> }", NamingKind.CONSTANT, "OPERATION_TIME");
+        assertOutcome("enum E { A, <caret> }", NamingKind.CONSTANT, "OPERATION_TIME");
+        assertOutcome("enum E { A, <caret>; }", NamingKind.CONSTANT, "OPERATION_TIME");
+        assertOutcome("enum E { <caret>, B; void f() { } }", NamingKind.CONSTANT, "OPERATION_TIME");
+    }
+
     /** 明示の static final は初期化子が無くても定数(クラス内・インタフェース内とも)。 */
     public void testExplicitStaticFinalWithoutInitializerIsConstant() {
         assertOutcome("class A { static final int <caret> }", NamingKind.CONSTANT, "OPERATION_TIME");
