@@ -1,6 +1,7 @@
 package namingassist.plugin.edit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -71,6 +72,26 @@ public class NameEditorModelTest {
         assertThrows(IndexOutOfBoundsException.class, () -> model.join(-1, 1));
         assertThrows(IndexOutOfBoundsException.class, () -> model.replaceWord(3, "x"));
         assertEquals("例外の後も元のまま", "get_employee_count", model.name().render(NamingCase.SNAKE));
+    }
+
+    /** 確定できるのは Java の識別子になる名前だけ(予約語 1 語・先頭が数字は不可)。 */
+    @Test
+    public void onlyValidIdentifierIsCommittable() {
+        NameEditorModel model = getEmployeeCount();
+        assertTrue(model.isCommittable(NamingCase.CAMEL));
+
+        NameEditorModel digitFirst = new NameEditorModel(new EnglishName(List.of(
+            new NamePart("array", List.of("array"), true),
+            new NamePart("2d", List.of("2d"), true))));
+        assertTrue(digitFirst.isCommittable(NamingCase.CAMEL));
+        digitFirst.move(1, 0);
+        assertFalse("先頭が数字", digitFirst.isCommittable(NamingCase.CAMEL));
+
+        NameEditorModel reserved = new NameEditorModel(new EnglishName(List.of(
+            new NamePart("value", List.of("value", "new"), true))));
+        reserved.replaceWord(0, "new");
+        assertFalse("予約語 1 語", reserved.isCommittable(NamingCase.CAMEL));
+        assertTrue("PascalCase の New は識別子になる", reserved.isCommittable(NamingCase.PASCAL));
     }
 
     @Test

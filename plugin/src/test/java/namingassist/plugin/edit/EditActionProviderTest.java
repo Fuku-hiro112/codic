@@ -3,6 +3,8 @@ package namingassist.plugin.edit;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementAction;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
+import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.editor.Document;
 import com.intellij.testFramework.PlatformTestUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import java.util.Collection;
@@ -97,6 +99,53 @@ public class EditActionProviderTest extends BasePlatformTestCase {
         String expected = model.name().render(NamingCase.UPPER_SNAKE);
         System.out.println("[CONST] edited=" + expected);
         myFixture.checkResult("class A { static final int " + expected + "<caret> = 1; }");
+    }
+
+    private EditTarget targetForPageTitle() {
+        LookupImpl lookup = completeJapanese("class A { void f() { int <caret> } }", "ページタイトルを取得する");
+        EditTarget target = EditActionProvider.targetFor(pluginItem(lookup, "getPageTitle"), lookup);
+        lookup.hideLookup(true);
+        return target;
+    }
+
+    private void edit(Runnable change) {
+        WriteCommandAction.runWriteCommandAction(getProject(), change);
+    }
+
+    /** 日本語の入力が消えた後(範囲が無効)に確定しても、何も書き込まない。 */
+    public void testCommitDoesNothingWhenRangeIsGone() {
+        EditTarget target = targetForPageTitle();
+        Document document = myFixture.getEditor().getDocument();
+        edit(() -> document.deleteString(target.range().getStartOffset(), target.range().getEndOffset()));
+        String before = document.getText();
+
+        assertFalse("書き込まないこと", target.replaceWith(target.candidate().name()));
+        assertEquals(before, document.getText());
+    }
+
+    /** 日本語の入力が書き換わった後に確定しても、何も書き込まない(別の文字列を潰さない)。 */
+    public void testCommitDoesNothingWhenTextChanged() {
+        EditTarget target = targetForPageTitle();
+        Document document = myFixture.getEditor().getDocument();
+        edit(() -> document.insertString(target.range().getStartOffset() + 1, "X"));
+        String before = document.getText();
+
+        assertFalse("書き込まないこと", target.replaceWith(target.candidate().name()));
+        assertEquals(before, document.getText());
+    }
+
+    /** 読み取り専用の文書では、例外を出さずに書き込まない。 */
+    public void testCommitDoesNothingOnReadOnlyDocument() {
+        EditTarget target = targetForPageTitle();
+        Document document = myFixture.getEditor().getDocument();
+        document.setReadOnly(true);
+        try {
+            String before = document.getText();
+            assertFalse("書き込まないこと", target.replaceWith(target.candidate().name()));
+            assertEquals(before, document.getText());
+        } finally {
+            document.setReadOnly(false);
+        }
     }
 
     /** 実際の操作(performLookupAction)を通す。Lookup は閉じ、確定するまで日本語は残る。 */

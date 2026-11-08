@@ -7,6 +7,7 @@ import com.intellij.codeInsight.lookup.LookupElementAction;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.util.Consumer;
 import namingassist.engine.Candidate;
 import namingassist.engine.NamingCase;
@@ -40,7 +41,7 @@ public final class EditActionProvider implements LookupActionProvider {
             return null;
         }
         return new EditTarget(lookup.getProject(), editor, editor.getDocument().createRangeMarker(start, end),
-            candidate, caseOf(candidate));
+            candidate, caseOf(candidate), editor.getDocument().getText(new TextRange(start, end)));
     }
 
     /** 候補の表記(rendered)と同じ綴りになる規則。見つからなければ CAMEL。 */

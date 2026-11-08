@@ -1,5 +1,6 @@
 package namingassist.plugin.edit;
 
+import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
@@ -35,6 +36,7 @@ final class NameEditorPopup {
     private final JButton right = new JButton("後ろへ →");
     private final JButton join = new JButton("次の語と結合");
     private final JBLabel preview = new JBLabel();
+    private final JButton ok = new JButton("確定");
     private JBPopup popup;
     private boolean refreshing;
 
@@ -88,7 +90,6 @@ final class NameEditorPopup {
             model.join(index, index + 1);
             refresh(index);
         });
-        JButton ok = new JButton("確定");
         ok.addActionListener(e -> commit());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -139,14 +140,29 @@ final class NameEditorPopup {
             left.setEnabled(index > 0);
             right.setEnabled(index < parts.size() - 1);
             join.setEnabled(index < parts.size() - 1);
-            preview.setText(model.name().render(target.namingCase()));
+            boolean committable = model.isCommittable(target.namingCase());
+            String rendered = model.name().render(target.namingCase());
+            preview.setText(committable ? rendered : rendered + "(Java の識別子にならないため確定できません)");
+            ok.setEnabled(committable);
         } finally {
             refreshing = false;
         }
     }
 
+    /** 識別子にならない名前は確定しない(小窓は開いたまま)。書き込めなかったら理由を出す。小窓は必ず閉じる。 */
     private void commit() {
-        target.replaceWith(model.name());
-        popup.closeOk(null);
+        if (!model.isCommittable(target.namingCase())) {
+            return;
+        }
+        boolean replaced = false;
+        try {
+            replaced = target.replaceWith(model.name());
+        } finally {
+            popup.closeOk(null);
+        }
+        if (!replaced) {
+            HintManager.getInstance().showErrorHint(target.editor(),
+                "日本語の入力が変わったか、ファイルに書き込めないため、置き換えませんでした");
+        }
     }
 }

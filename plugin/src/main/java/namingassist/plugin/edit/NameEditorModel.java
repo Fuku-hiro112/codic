@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import namingassist.engine.EnglishName;
 import namingassist.engine.NamePart;
+import namingassist.engine.NamingCase;
 
 /**
  * 英語名の部品(単語)の編集。codic の「単語をクリックで別訳」「Shift+クリックで結合」「Ctrl+ドラッグで並べ替え」
@@ -16,6 +17,11 @@ public final class NameEditorModel {
 
     public NameEditorModel(EnglishName name) {
         this.name = Objects.requireNonNull(name);
+    }
+
+    /** 確定してよいか。namingCase で綴った名前が Java の識別子になるとき(予約語 1 語・先頭が数字は不可)。 */
+    public boolean isCommittable(NamingCase namingCase) {
+        return name.isValidJavaIdentifier(namingCase);
     }
 
     /** 現在の英語名。 */
