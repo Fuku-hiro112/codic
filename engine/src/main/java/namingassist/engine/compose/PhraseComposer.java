@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import namingassist.engine.EnglishName;
@@ -24,6 +25,7 @@ import namingassist.engine.tokenize.Token;
  *   <li>英数字だけの語は辞書を引かず、小文字にして語にする。
  *   <li>名詞の直後の「s」「ｓ」は、その名詞の訳を複数形にする印として読む。
  *   <li>辞書に無い語は日本語のまま残す(resolved=false)。隣り合う未登録語は一語にまとめる。
+ *   <li>「か」で終わる句は should / is / has を先頭に付けた真偽値の名前にする({@link BooleanRule})。
  * </ul>
  *
  * 候補は各語の訳の組み合わせを、辞書の優先順の辞書式順序(後ろの語ほど速く変わる)で遅延生成する。
@@ -41,19 +43,48 @@ public final class PhraseComposer {
         this.dictionary = dictionary;
     }
 
-    /** 候補を優先順に返す。全語が未登録なら空。 */
+    /** 候補を優先順に返す。全語が未登録なら空。「か」で終わる句は真偽値の形にする({@link BooleanRule})。 */
     public Stream<EnglishName> compose(List<Token> tokens) {
-        List<Slot> slots = slots(tokens);
+        Optional<BooleanRule.Form> bool = BooleanRule.of(tokens);
+        Clause clause = clause(bool.map(BooleanRule.Form::body).orElse(tokens));
+        List<Slot> slots = bool.map(form -> booleanSlots(form, clause)).orElseGet(clause::ordered);
         if (slots.isEmpty() || slots.stream().noneMatch(Slot::resolved)) {
             return Stream.empty();
         }
+        bool.ifPresent(form -> slots.add(0, new Slot(List.of(List.of(form.prefix())), true)));
         return Stream.iterate(new int[slots.size()], c -> c != null, c -> next(c, slots))
             .map(choice -> toName(choice, slots));
     }
 
+    /** 接頭辞を除いた真偽値の名前の枠。 */
+    private static List<Slot> booleanSlots(BooleanRule.Form form, Clause clause) {
+        return switch (form.verbPlace()) {
+            case FRONT -> clause.ordered();
+            case DROPPED -> new ArrayList<>(clause.rest());
+            case LAST_AS_PAST_PARTICIPLE -> {
+                List<Slot> s = new ArrayList<>(clause.rest());
+                s.add(clause.verb().pastParticiple());
+                yield s;
+            }
+        };
+    }
+
     // ---- 語の列 → 語ごとの訳の枠 ----
 
-    private List<Slot> slots(List<Token> tokens) {
+    /** 述語の動詞の枠(無ければ null)と、それ以外の語の枠(日本語の順)。 */
+    private record Clause(Slot verb, List<Slot> rest) {
+        /** 述語を先頭に置いた並び。変更できるリスト。 */
+        List<Slot> ordered() {
+            List<Slot> ordered = new ArrayList<>();
+            if (verb != null) {
+                ordered.add(verb);
+            }
+            ordered.addAll(rest);
+            return ordered;
+        }
+    }
+
+    private Clause clause(List<Token> tokens) {
         int predicate = predicateIndex(tokens);
         Slot verb = null;
         List<Slot> rest = new ArrayList<>();
@@ -80,16 +111,11 @@ public final class PhraseComposer {
                 lastSlotToken = i;
             }
         }
-        List<Slot> ordered = new ArrayList<>();
-        if (verb != null) {
-            ordered.add(verb);
-        }
-        ordered.addAll(rest);
-        return ordered;
+        return new Clause(verb, rest);
     }
 
     /** 述語の動詞として訳す語の位置。「名詞+する」なら名詞の位置。無ければ -1。 */
-    private static int predicateIndex(List<Token> tokens) {
+    static int predicateIndex(List<Token> tokens) {
         for (int i = tokens.size() - 1; i >= 0; i--) {
             Token t = tokens.get(i);
             if (t.pos() != Pos.VERB || NON_INDEPENDENT_VERBS.contains(t.baseForm())) {
@@ -175,6 +201,20 @@ public final class PhraseComposer {
                 plural.add(List.copyOf(w));
             }
             return new Slot(List.copyOf(plural), true);
+        }
+
+        /** 動詞の訳を過去分詞にする(複数語の訳は最初の語)。 */
+        Slot pastParticiple() {
+            if (!resolved) {
+                return this;
+            }
+            Set<List<String>> participles = new LinkedHashSet<>();
+            for (List<String> words : choices) {
+                List<String> w = new ArrayList<>(words);
+                w.set(0, BooleanRule.pastParticiple(w.get(0)));
+                participles.add(List.copyOf(w));
+            }
+            return new Slot(List.copyOf(participles), true);
         }
 
         /** 隣り合う未登録語を一語にまとめる。 */
