@@ -45,6 +45,14 @@ class BasicWordsTest {
         assertEquals("notifyList", top("通知一覧", NamingKind.VARIABLE));
     }
 
+    /** 予約語 class にしかならない語は、Java の慣習の clazz にする(候補を 0 件にしない)。 */
+    @Test
+    void reservedClassBecomesClazz() {
+        assertEquals("clazz", top("クラス", NamingKind.VARIABLE));
+        assertEquals("Class", top("クラス", NamingKind.CLASS));
+        assertEquals("CLASS", top("クラス", NamingKind.CONSTANT));
+    }
+
     @Test
     void otherBasicWords() {
         assertEquals("getTimeStamp", top("タイムスタンプを取得する", NamingKind.METHOD));

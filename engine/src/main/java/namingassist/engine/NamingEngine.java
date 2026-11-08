@@ -59,12 +59,21 @@ public final class NamingEngine {
             if (canceled.getAsBoolean()) {
                 break;
             }
-            EnglishName name = names.next();
+            EnglishName name = avoidReservedClass(names.next(), c);
             String rendered = name.render(c);
             if (name.isValidJavaIdentifier(c) && seen.add(rendered)) {
                 candidates.add(new Candidate(name, rendered));
             }
         }
         return List.copyOf(candidates);
+    }
+
+    /** 1 語の class(予約語)は、Java の慣習どおり clazz にする。他の予約語は除くだけ(慣習の別名が定まらない)。 */
+    private static EnglishName avoidReservedClass(EnglishName name, NamingCase c) {
+        if (name.parts().size() != 1 || !"class".equals(name.render(c))) {
+            return name;
+        }
+        NamePart part = name.parts().get(0);
+        return new EnglishName(List.of(new NamePart("clazz", part.alternatives(), part.resolved())));
     }
 }
