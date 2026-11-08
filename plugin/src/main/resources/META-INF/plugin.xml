@@ -1,0 +1,18 @@
+<idea-plugin>
+    <id>com.namingassist.japanese-naming</id>
+    <name>Japanese Naming Assist</name>
+    <vendor>namingassist</vendor>
+    <description><![CDATA[
+    Suggests English identifier names from a Japanese phrase typed in the Java editor.
+    Type a Japanese phrase (e.g. 稼働時刻) where a name goes and pick an English candidate (operationTime).
+    English input is left to the standard completion unchanged. Works offline with bundled dictionaries.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <completion.contributor language="JAVA"
+                                implementationClass="namingassist.plugin.JapaneseNamingContributor"/>
+    </extensions>
+</idea-plugin>
