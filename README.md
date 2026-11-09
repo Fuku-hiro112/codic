@@ -52,12 +52,24 @@ Settings > Tools > 日本語→英語 命名 で、語と訳(複数可)を追加
 
 ## ライセンスと出典
 
-配布物には次の第三者の著作物が含まれます。全文(原文のまま)は
-`plugin/src/main/resources/THIRD-PARTY-NOTICES.md`(配布物では plugin の jar の中の `THIRD-PARTY-NOTICES.md`)にあります。
+ライセンスは、自作のコードと同梱物ごとに分かれます。
+
+| 対象 | ライセンス | 全文・出典 |
+|---|---|---|
+| このプラグインのコード(engine・plugin・tools の自作部分) | MIT License | `LICENSE` |
+| 辞書データ `jmdict.tsv`(`engine/src/main/resources/dictionary/`、JMdict 由来) | CC BY-SA 4.0(コードとは別) | `LICENSE-JMDICT.md` |
+| Kuromoji 0.9.0 | Apache License 2.0 | `THIRD-PARTY-NOTICES.md` §1・§2 |
+| IPADIC(Kuromoji の辞書データ) | mecab-ipadic の条件(NAIST / ICOT) | `THIRD-PARTY-NOTICES.md` §3 |
+
+配布 zip では、プラグインのフォルダ(`lib/` と同じ階層)に `LICENSE`・`LICENSE-JMDICT.md`・`THIRD-PARTY-NOTICES.md` を置いています
+(`THIRD-PARTY-NOTICES.md` は plugin の jar の中、`LICENSE-JMDICT.md` は engine の jar の中にもあります)。
+リポジトリでの場所は `LICENSE`、`plugin/src/main/resources/THIRD-PARTY-NOTICES.md`、
+`engine/src/main/resources/dictionary/LICENSE-JMDICT.md` です。
 
 - **JMdict**(EDRDG): 命名用に加工した辞書 `jmdict.tsv` として同梱。CC BY-SA 4.0。
-  加工辞書は CC BY-SA 4.0 で配布され、プラグインのコードとは別のライセンスです。
+  加工辞書は CC BY-SA 4.0 で配布され、プラグインのコード(MIT)とは別のライセンスです。
   出典と加工の内容は `engine/src/main/resources/dictionary/LICENSE-JMDICT.md`(設定画面からも表示できます)。
+  更新の手順は `docs/dictionary-update.md`。
   https://www.edrdg.org/edrdg/licence.html
 - **Kuromoji** 0.9.0(Atilika Inc. and contributors): 日本語の形態素解析。Apache License 2.0。
 - **IPADIC**(mecab-ipadic-2.7.0-20070801、Nara Institute of Science and Technology。項目の多くは ICOT Free Software 由来):

@@ -44,6 +44,19 @@ intellijPlatform {
     }
 }
 
+// 配布 zip のプラグインのフォルダ(lib/ と同じ階層)にも、ライセンスと第三者の通知を置く。
+// jar の中だけでは見つけにくいため(IPADIC の著作権表示・許諾条件・無保証条項の添付)。
+// buildPlugin は prepareSandbox の出力を zip にし、pluginName はサンドボックス内のプラグインのフォルダ名。
+tasks.prepareSandbox {
+    from(files(
+        rootProject.layout.projectDirectory.file("LICENSE"),
+        layout.projectDirectory.file("src/main/resources/THIRD-PARTY-NOTICES.md"),
+        project(":engine").layout.projectDirectory.file("src/main/resources/dictionary/LICENSE-JMDICT.md"),
+    )) {
+        into(pluginName)
+    }
+}
+
 tasks.test {
     useJUnit()
     jvmArgs("-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
