@@ -9,19 +9,31 @@ import com.intellij.codeInsight.lookup.LookupElementAction;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.codeInsight.lookup.LookupManager;
 import com.intellij.codeInsight.lookup.impl.LookupImpl;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionPromoter;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.IdeActions;
 import com.intellij.openapi.actionSystem.KeyboardShortcut;
+import com.intellij.openapi.actionSystem.ex.ActionUtil;
+import com.intellij.openapi.actionSystem.impl.SimpleDataContext;
+import com.intellij.openapi.actionSystem.impl.UtilsKt;
 import com.intellij.openapi.extensions.DefaultPluginDescriptor;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.KeymapManager;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.testFramework.PlatformTestUtil;
+import com.intellij.testFramework.TestActionEvent;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.ui.TitlePanel;
 import com.intellij.ui.UiInterceptors;
 import com.intellij.ui.popup.AbstractPopup;
 import com.intellij.ui.awt.RelativePoint;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.List;
 import javax.swing.KeyStroke;
 import namingassist.engine.Candidate;
@@ -160,5 +172,75 @@ public class EditCandidateActionTest extends BasePlatformTestCase {
 
         assertEquals(List.of(), shownPopups);
         myFixture.checkResult("class A { void f() { int ページタイトルを取得する<caret> } }");
+    }
+    /**
+     * Alt+Enter を押したとき IDE が実行するアクション。IdeKeyEventDispatcher と同じく、既定のキーマップの割り当てを
+     * ActionPromoter で並べ替え(拡張点 + アクション自身が promoter のもの)、update で有効な最初のものを選ぶ。
+     */
+    private String actionChosenForAltEnter() {
+        Keymap keymap = KeymapManager.getInstance().getKeymap("$default");
+        List<AnAction> bound = keymap.getActionIdList(new KeyboardShortcut(KeyStroke.getKeyStroke("alt ENTER"), null))
+            .stream().map(id -> ActionManager.getInstance().getAction(id)).filter(Objects::nonNull).toList();
+        DataContext context = SimpleDataContext.builder()
+            .add(CommonDataKeys.PROJECT, getProject())
+            .add(CommonDataKeys.EDITOR, myFixture.getEditor())
+            .add(CommonDataKeys.PSI_FILE, myFixture.getFile())
+            .build();
+        List<ActionPromoter> promoters = new ArrayList<>(ActionPromoter.EP_NAME.getExtensionList());
+        bound.stream().filter(a -> a instanceof ActionPromoter).map(a -> (ActionPromoter) a).forEach(promoters::add);
+        List<AnAction> ordered = UtilsKt.rearrangeByPromotersImpl(bound, context, promoters);
+        ActionManager manager = ActionManager.getInstance();
+        System.out.println("[ALT-ENTER] ordered=" + ordered.stream().map(manager::getId).toList());
+        for (AnAction action : ordered) {
+            var event = TestActionEvent.createTestEvent(action, context);
+            ActionUtil.performDumbAwareUpdate(action, event, false);
+            if (event.getPresentation().isEnabled()) {
+                return manager.getId(action);
+            }
+        }
+        return null;
+    }
+
+    /** 実機の Alt+Enter の一覧は IDE の描画の不具合で文字が出ない。本プラグインの候補が並ぶ間は小窓を直接開く。 */
+    public void testAltEnterIsBoundToEditAction() {
+        Keymap keymap = KeymapManager.getInstance().getKeymap("$default");
+        KeyboardShortcut altEnter = new KeyboardShortcut(KeyStroke.getKeyStroke("alt ENTER"), null);
+        List<String> bound = keymap.getActionIdList(altEnter);
+        System.out.println("[SHORTCUT] alt ENTER -> " + bound);
+        assertTrue("既定のキーマップで Alt+Enter が割り当てられていること: " + bound, bound.contains(EditCandidateAction.ID));
+        assertTrue("IDE の Alt+Enter も残ること: " + bound, bound.contains(IdeActions.ACTION_SHOW_INTENTION_ACTIONS));
+    }
+
+    public void testAltEnterOpensEditorWhilePluginCandidatesShown() {
+        completePageTitle();
+        assertEquals(EditCandidateAction.ID, actionChosenForAltEnter());
+    }
+
+    public void testAltEnterOpensEditorWhenOtherItemSelected() {
+        completeAndSelectOtherItem();
+        assertEquals(EditCandidateAction.ID, actionChosenForAltEnter());
+    }
+
+    /** 英字だけの一覧(本プラグインの候補が無い)や一覧が無いときは、IDE の Alt+Enter のまま。 */
+    public void testAltEnterLeftToIdeWithoutPluginCandidates() {
+        myFixture.configureByText("A.java", "class A { void f() { String strA = \"\", strB = \"\"; str<caret> } }");
+        myFixture.completeBasic();
+        assertNotNull("Lookup が出ること", myFixture.getLookup());
+        assertEquals(IdeActions.ACTION_SHOW_INTENTION_ACTIONS, actionChosenForAltEnter());
+    }
+
+    public void testAltEnterLeftToIdeWithoutLookup() {
+        myFixture.configureByText("A.java", "class A { void f() { int ページタイトルを取得する<caret> } }");
+        assertEquals(IdeActions.ACTION_SHOW_INTENTION_ACTIONS, actionChosenForAltEnter());
+    }
+
+    /** 候補の操作(電球の一覧)に渡す名前とアイコン。空の四角形の原因がこちらでないことの確認。 */
+    public void testLookupActionHasTextAndIcon() {
+        LookupImpl lookup = completePageTitle();
+        LookupElementAction action = lookup.getActionsFor(pluginItem(lookup, "getPageTitle")).stream()
+            .filter(a -> EditActionProvider.ACTION_TEXT.equals(a.getText()))
+            .findFirst().orElseThrow();
+        assertFalse(action.getText().isBlank());
+        assertSame(AllIcons.Actions.Edit, action.getIcon());
     }
 }

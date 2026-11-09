@@ -6,7 +6,7 @@
     Suggests English identifier names from a Japanese phrase typed in the Java editor.
     Type a Japanese phrase (e.g. 稼働時刻) where a name goes and pick an English candidate (operationTime).
     English input is left to the standard completion unchanged. Works offline with bundled dictionaries.
-    To reorder, join or swap the words of a candidate, press Ctrl+Shift+Q while the candidate list is shown.
+    To reorder, join or swap the words of a candidate, press Alt+Enter while the candidate list is shown.
     User dictionary: Settings | Tools | 日本語→英語 命名.
     <br/>This package uses the JMdict/EDICT dictionary files (processed for naming).
     JMdict/EDICT (c) Electronic Dictionary Research and Development Group, CC BY-SA 4.0
@@ -20,6 +20,7 @@
         <completion.contributor language="JAVA"
                                 implementationClass="namingassist.plugin.JapaneseNamingContributor"/>
         <lookup.actionProvider implementation="namingassist.plugin.edit.EditActionProvider"/>
+        <actionPromoter implementation="namingassist.plugin.edit.EditCandidateActionPromoter"/>
         <applicationConfigurable parentId="tools"
                                  instance="namingassist.plugin.settings.UserDictionaryConfigurable"
                                  id="namingassist.userDictionary"
@@ -27,11 +28,14 @@
     </extensions>
 
     <actions>
-        <!-- 候補一覧が出ている間に押すと、単語の並べ替え・結合の小窓を開く。キーは既定のキーマップで未使用のもの。 -->
+        <!-- 候補一覧に本プラグインの候補が並ぶ間に押すと、単語の並べ替え・結合の小窓を開く。
+             Alt+Enter は IDE の意図アクションと共有し、EditCandidateActionPromoter で先に試させる(無効なら IDE の Alt+Enter)。
+             Ctrl+Shift+Q は既定のキーマップで未使用のもの。 -->
         <action id="namingassist.EditNamingCandidate"
                 class="namingassist.plugin.edit.EditCandidateAction"
                 text="日本語の命名候補を編集(単語の並べ替え・結合)"
                 description="英語名の候補の一覧が出ている間に、本プラグインの候補の単語を並べ替え・結合・別訳に差し替える">
+            <keyboard-shortcut keymap="$default" first-keystroke="alt ENTER"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift Q"/>
         </action>
     </actions>

@@ -16,9 +16,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 候補一覧に本プラグインの候補があるとき、候補の操作(Lookup 表示中の Alt+Enter、または一覧の電球)に
- * 「単語を並べ替え・結合」を足す。選ぶと Lookup を閉じ、日本語の入力を残したまま編集の小窓を開く。
- * 確実な入口はショートカットのアクション {@link EditCandidateAction}。
+ * 候補一覧に本プラグインの候補があるとき、候補の操作(一覧の電球)に「単語を並べ替え・結合」を足す。
+ * 選ぶと Lookup を閉じ、日本語の入力を残したまま編集の小窓を開く。
+ * IDE 2025.2 ではこの操作の一覧の文字が描かれない(描画中に IDE 内部で例外)ため、主な入口は
+ * Alt+Enter で小窓を直接開く {@link EditCandidateAction}。
  */
 public final class EditActionProvider implements LookupActionProvider {
     public static final String ACTION_TEXT = "単語を並べ替え・結合…";
