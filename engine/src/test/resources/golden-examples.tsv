@@ -40,3 +40,12 @@
 # 利用者の実例(2026-11-09 確定)。以前に保留した綴り pollenotify は打ち間違いで、正しくは pollenNotify と利用者に確認済み。
 # 命名種別 VARIABLE は利用者が指定していない仮定(期待値の綴りの形から変数名と推定した)。
 花粉通知	VARIABLE	CAMEL	pollenNotify
+
+# 利用者の実例(2026-11-09 に利用者が会話で送ったもの。期待値は利用者の表記のまま。書き換え禁止)。
+# 同じ会話で利用者が送った「正規表現検索は有効か→isRegexpSearchEnabled」「有料プランか→isPaidPlan」は上に登録済みのため、重複して追加しない。
+ウェブサイトを持っているか	METHOD	CAMEL	hasWebsite
+
+# 利用者の実例(2026-11-09 に利用者が会話で送ったもの。期待値は利用者の表記のまま。書き換え禁止)。
+# 命名種別 VARIABLE / CAMEL は利用者が指定していない仮定(フィールド名・変数名として使う想定)。
+作成日	VARIABLE	CAMEL	createdOn
+患者名	VARIABLE	CAMEL	patientName
