@@ -117,6 +117,25 @@ public class EditActionProviderTest extends BasePlatformTestCase {
         myFixture.checkResult("class A { void f() { int twoDimensionArray<caret> } }");
     }
 
+    /** 英字の直後に日本語を打ったとき、小窓で編集した名前は英字の後ろにつなぎ、英字はそのまま残す。 */
+    public void testCommitKeepsTypedLead() {
+        myFixture.configureByText("A.java", "class A { void f() { int str<caret> } }");
+        LookupImpl lookup = completeJapanese(null, "ページタイトルを取得する");
+        Candidate first = (Candidate) lookup.getItems().stream()
+            .filter(e -> e.getObject() instanceof Candidate)
+            .findFirst().orElseThrow().getObject();
+        EditTarget target = EditActionProvider.targetFor(pluginItem(lookup, first.rendered()), lookup);
+        assertNotNull(target);
+        assertEquals("str", target.lead());
+        assertEquals("strページタイトルを取得する", target.originalText());
+        lookup.hideLookup(true);
+
+        assertTrue(target.replaceWith(target.candidate().name()));
+        String expected = "str" + Character.toUpperCase(first.rendered().charAt(0)) + first.rendered().substring(1);
+        System.out.println("[EDIT-LEAD] first=" + first.rendered() + " expected=" + expected);
+        myFixture.checkResult("class A { void f() { int " + expected + "<caret> } }");
+    }
+
     private EditTarget targetForPageTitle() {
         LookupImpl lookup = completeJapanese("class A { void f() { int <caret> } }", "ページタイトルを取得する");
         EditTarget target = EditActionProvider.targetFor(pluginItem(lookup, "getPageTitle"), lookup);

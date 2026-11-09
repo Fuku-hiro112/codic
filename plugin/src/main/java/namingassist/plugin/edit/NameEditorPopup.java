@@ -141,7 +141,7 @@ final class NameEditorPopup {
             right.setEnabled(index < parts.size() - 1);
             join.setEnabled(index < parts.size() - 1);
             boolean committable = model.isCommittable(target.namingCase());
-            String rendered = model.name().render(target.namingCase());
+            String rendered = target.textFor(model.name());
             preview.setText(committable ? rendered : rendered + "(Java の識別子にならないため確定できません)");
             ok.setEnabled(committable);
         } finally {

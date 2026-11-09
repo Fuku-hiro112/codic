@@ -11,6 +11,7 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.util.Consumer;
 import namingassist.engine.Candidate;
 import namingassist.plugin.JapaneseNamingContributor;
+import namingassist.plugin.TypedLead;
 import namingassist.engine.NamingCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -59,10 +60,13 @@ public final class EditActionProvider implements LookupActionProvider {
             return null;
         }
         // 先頭の数字(2次元配列の「2」)はプレフィックスの外にあるが、句の一部として解析したので範囲に含める
-        int start = lookupStart - JapaneseNamingContributor.leadingDigits(
-            editor.getDocument().getCharsSequence(), lookupStart).length();
+        String digits = JapaneseNamingContributor.leadingDigits(editor.getDocument().getCharsSequence(), lookupStart);
+        int start = lookupStart - digits.length();
+        String text = editor.getDocument().getText(new TextRange(start, end));
+        // 補完と同じく、先頭の打ち済みの英字(pageDecisionああ の pageDecision)は残して、編集した名前の前につなぐ
+        String lead = digits.isEmpty() ? TypedLead.leadOf(text) : "";
         return new EditTarget(lookup.getProject(), editor, editor.getDocument().createRangeMarker(start, end),
-            candidate, caseOf(candidate), editor.getDocument().getText(new TextRange(start, end)));
+            candidate, caseOf(candidate), text, lead);
     }
 
     /** 候補の表記(rendered)と同じ綴りになる規則。見つからなければ CAMEL。 */

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import namingassist.engine.Candidate;
+import namingassist.engine.NamingCase;
 import namingassist.engine.NamingEngine;
 import namingassist.engine.NamingKind;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * 補完のプレフィックスに日本語が含まれるときだけ、英語の命名候補を足す。英字だけのときは何も足さない
  * (標準の補完をそのまま残す)。候補は日本語の句でも絞り込めるよう、句を lookup string に加える。
+ * 英字の直後に日本語を打ったとき(pageDecisionああ)は、英字を残して日本語の部分だけを訳す({@link TypedLead})。
  */
 public final class JapaneseNamingContributor extends CompletionContributor {
     private static final Logger LOG = Logger.getInstance(JapaneseNamingContributor.class);
@@ -43,7 +45,11 @@ public final class JapaneseNamingContributor extends CompletionContributor {
         // 先頭の数字(2次元配列の「2」)は識別子の先頭になれずプレフィックスに入らない。句の先頭に含めて解析し、確定で消す。
         CharSequence text = parameters.getEditor().getDocument().getCharsSequence();
         String digits = leadingDigits(text, parameters.getOffset() - prefix.length());
-        String phrase = digits + prefix;
+        // 先頭の打ち済みの英字(pageDecisionああ の pageDecision)は訳さずに残し、日本語の部分だけを訳して後ろにつなぐ。
+        // 数字が前にあるとき(2dモデル)は識別子の先頭になれないので、これまでどおり全体を句として訳す。
+        String lead = digits.isEmpty() ? TypedLead.leadOf(prefix) : "";
+        String phrase = digits + prefix.substring(lead.length());
+        NamingCase namingCase = kind.defaultCase();
         InsertHandler<LookupElement> removeDigits = digits.isEmpty() ? null : (context, item) -> {
             Document document = context.getDocument();
             int end = context.getStartOffset();
@@ -57,9 +63,10 @@ public final class JapaneseNamingContributor extends CompletionContributor {
         int count = candidates.size();
         for (int i = 0; i < count; i++) {
             Candidate candidate = candidates.get(i);
-            LookupElementBuilder element = LookupElementBuilder.create(candidate, candidate.rendered())
-                .withLookupString(prefix) // matcher はプレフィックス(数字を含まない)で絞るので、それと一致する形を持たせる
-                .withTypeText(phrase)
+            LookupElementBuilder element = LookupElementBuilder
+                .create(candidate, TypedLead.join(lead, candidate.rendered(), namingCase))
+                .withLookupString(prefix) // matcher はプレフィックス(数字を含まず、lead を含む)で絞るので、それと一致する形を持たせる
+                .withTypeText(digits + prefix)
                 .withInsertHandler(removeDigits);
             result.addElement(PrioritizedLookupElement.withPriority(element, count - i));
         }
