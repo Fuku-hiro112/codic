@@ -28,6 +28,19 @@ class EnglishNameTest {
         assertEquals("get-employee-count", n.render(NamingCase.KEBAB));
     }
 
+    /** 部品の text が空白区切りの複数語(結合した語)なら、語ごとに区切って綴る。 */
+    @Test
+    void rendersMultiWordPartAsSeparateWords() {
+        EnglishName n = name("get", "employee count");
+        assertEquals("getEmployeeCount", n.render(NamingCase.CAMEL));
+        assertEquals("GetEmployeeCount", n.render(NamingCase.PASCAL));
+        assertEquals("get_employee_count", n.render(NamingCase.SNAKE));
+        assertEquals("GET_EMPLOYEE_COUNT", n.render(NamingCase.UPPER_SNAKE));
+        assertEquals("get-employee-count", n.render(NamingCase.KEBAB));
+        assertTrue(n.isValidJavaIdentifier(NamingCase.CAMEL));
+        assertEquals("employeeCount", name("employee count").render(NamingCase.CAMEL));
+    }
+
     @Test
     void rejectsEmptyParts() {
         assertThrows(IllegalArgumentException.class, () -> new EnglishName(List.of()));

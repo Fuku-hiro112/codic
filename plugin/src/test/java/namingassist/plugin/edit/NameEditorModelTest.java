@@ -41,9 +41,24 @@ public class NameEditorModelTest {
         model.join(1, 2);
         List<NamePart> parts = model.name().parts();
         assertEquals(2, parts.size());
-        assertEquals("employeecount", parts.get(1).text());
-        assertEquals("get_employeecount", model.name().render(NamingCase.SNAKE));
-        assertEquals("getEmployeecount", model.name().render(NamingCase.CAMEL));
+        assertEquals("employee count", parts.get(1).text());
+        assertEquals("get_employee_count", model.name().render(NamingCase.SNAKE));
+        assertEquals("getEmployeeCount", model.name().render(NamingCase.CAMEL));
+    }
+
+    /** 結合した語は 1 つの部品として動き、別訳への差し替えもでき、綴りは大文字の区切りを残す。 */
+    @Test
+    public void joinedWordMovesAndIsReplacedAsOnePart() {
+        NameEditorModel model = getEmployeeCount();
+        model.join(1, 2);
+        model.move(1, 0);
+        assertEquals("employeeCountGet", model.name().render(NamingCase.CAMEL));
+        assertEquals("EMPLOYEE_COUNT_GET", model.name().render(NamingCase.UPPER_SNAKE));
+        assertTrue(model.isCommittable(NamingCase.CAMEL));
+
+        model.replaceWord(0, "staff");
+        assertEquals("staffGet", model.name().render(NamingCase.CAMEL));
+        assertTrue("結合語は別訳に残る", model.name().parts().get(0).alternatives().contains("employee count"));
     }
 
     @Test

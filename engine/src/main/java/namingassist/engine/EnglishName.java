@@ -1,5 +1,6 @@
 package namingassist.engine;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -23,10 +24,18 @@ public record EnglishName(List<NamePart> parts) {
         parts = List.copyOf(parts);
     }
 
+    /**
+     * 規則 c で綴る。部品の text が空白区切りの複数語(結合した語)なら、語ごとに区切って綴る
+     * (employee count → CAMEL では EmployeeCount の形、SNAKE では employee_count)。
+     */
     public String render(NamingCase c) {
+        List<String> words = parts.stream()
+                .flatMap(p -> Arrays.stream(p.text().split(" ")))
+                .filter(w -> !w.isEmpty())
+                .toList();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < parts.size(); i++) {
-            String t = parts.get(i).text();
+        for (int i = 0; i < words.size(); i++) {
+            String t = words.get(i);
             switch (c) {
                 case CAMEL -> sb.append(i == 0 ? lower(t) : capitalize(t));
                 case PASCAL -> sb.append(capitalize(t));

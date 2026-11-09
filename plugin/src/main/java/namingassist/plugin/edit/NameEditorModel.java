@@ -38,7 +38,11 @@ public final class NameEditorModel {
         name = new EnglishName(parts);
     }
 
-    /** from から to まで(両端を含む)の単語を 1 語につなげる。綴りは区切り無しの連結(employee + count → employeecount)。 */
+    /**
+     * from から to まで(両端を含む)の単語を 1 つの部品につなげる。部品の text は空白区切りの語の列で持ち、
+     * 綴りは大文字の区切りを残す(employee + count → text は "employee count"、CAMEL で EmployeeCount の形)。
+     * 結合後は 1 つの部品として move・replaceWord の対象になる。
+     */
     public void join(int from, int to) {
         List<NamePart> parts = new ArrayList<>(name.parts());
         Objects.checkIndex(from, parts.size());
@@ -47,13 +51,14 @@ public final class NameEditorModel {
             throw new IllegalArgumentException("from must be less than to: " + from + ", " + to);
         }
         List<NamePart> joined = parts.subList(from, to + 1);
-        StringBuilder text = new StringBuilder();
+        List<String> texts = new ArrayList<>();
         boolean resolved = true;
         for (NamePart part : joined) {
-            text.append(part.text());
+            texts.add(part.text());
             resolved &= part.resolved();
         }
-        NamePart one = new NamePart(text.toString(), List.of(text.toString()), resolved);
+        String text = String.join(" ", texts);
+        NamePart one = new NamePart(text, List.of(text), resolved);
         joined.clear();
         parts.add(from, one);
         name = new EnglishName(parts);
