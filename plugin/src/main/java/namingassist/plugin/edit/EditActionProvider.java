@@ -16,8 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 候補一覧で本プラグインの候補を選んでいるとき、その候補の操作(Lookup 表示中の Alt+Enter、または一覧の電球)に
+ * 候補一覧に本プラグインの候補があるとき、候補の操作(Lookup 表示中の Alt+Enter、または一覧の電球)に
  * 「単語を並べ替え・結合」を足す。選ぶと Lookup を閉じ、日本語の入力を残したまま編集の小窓を開く。
+ * 確実な入口はショートカットのアクション {@link EditCandidateAction}。
  */
 public final class EditActionProvider implements LookupActionProvider {
     public static final String ACTION_TEXT = "単語を並べ替え・結合…";
@@ -25,9 +26,24 @@ public final class EditActionProvider implements LookupActionProvider {
     @Override
     public void fillActions(@NotNull LookupElement element, @NotNull Lookup lookup,
                             @NotNull Consumer<? super LookupElementAction> consumer) {
-        if (element.getObject() instanceof Candidate) {
-            consumer.consume(new EditAction(element, lookup));
+        LookupElement item = pluginItemFor(element, lookup);
+        if (item != null) {
+            consumer.consume(new EditAction(item, lookup));
         }
+    }
+
+    /**
+     * 編集の対象にする候補。element が本プラグインの候補ならそれ、そうでなければ一覧の先頭の本プラグインの候補。
+     * 一覧に本プラグインの候補が無ければ null。標準の候補(ML の予測など)が選ばれていても編集に入れるようにする
+     * (選んでいる候補に操作が 1 つも無いと、IDE は Alt+Enter で何も出さない)。
+     */
+    static @Nullable LookupElement pluginItemFor(@Nullable LookupElement element, Lookup lookup) {
+        if (element != null && element.getObject() instanceof Candidate) {
+            return element;
+        }
+        return lookup.getItems().stream()
+            .filter(e -> e.getObject() instanceof Candidate)
+            .findFirst().orElse(null);
     }
 
     /** element が本プラグインの候補なら、日本語の入力の範囲と表記をまとめた編集の対象。それ以外は null。 */
