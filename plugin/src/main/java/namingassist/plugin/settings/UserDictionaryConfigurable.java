@@ -17,7 +17,6 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +106,6 @@ public final class UserDictionaryConfigurable implements Configurable {
     }
 
     private void showLicense() {
-        URL url = TsvDictionary.class.getResource(LICENSE_RESOURCE);
         JBTextArea text = new JBTextArea(readLicense(), 25, 90);
         text.setEditable(false);
         text.setLineWrap(true);
@@ -116,7 +114,7 @@ public final class UserDictionaryConfigurable implements Configurable {
         DialogBuilder builder = new DialogBuilder(table);
         builder.setTitle("LICENSE-JMDICT.md");
         JPanel panel = new JPanel(new BorderLayout(0, JBUI.scale(4)));
-        panel.add(new JBLabel("同梱場所: " + (url == null ? LICENSE_RESOURCE : url)), BorderLayout.NORTH);
+        panel.add(new JBLabel("同梱場所: " + LICENSE_RESOURCE), BorderLayout.NORTH);
         panel.add(new JBScrollPane(text), BorderLayout.CENTER);
         builder.setCenterPanel(panel);
         builder.addOkAction();
