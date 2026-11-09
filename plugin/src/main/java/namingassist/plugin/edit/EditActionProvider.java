@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.util.Consumer;
 import namingassist.engine.Candidate;
+import namingassist.plugin.JapaneseNamingContributor;
 import namingassist.engine.NamingCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,11 +36,14 @@ public final class EditActionProvider implements LookupActionProvider {
             return null;
         }
         Editor editor = lookup.getEditor();
-        int start = lookup.getLookupStart();
+        int lookupStart = lookup.getLookupStart();
         int end = editor.getCaretModel().getOffset();
-        if (start < 0 || start > end) {
+        if (lookupStart < 0 || lookupStart > end) {
             return null;
         }
+        // 先頭の数字(2次元配列の「2」)はプレフィックスの外にあるが、句の一部として解析したので範囲に含める
+        int start = lookupStart - JapaneseNamingContributor.leadingDigits(
+            editor.getDocument().getCharsSequence(), lookupStart).length();
         return new EditTarget(lookup.getProject(), editor, editor.getDocument().createRangeMarker(start, end),
             candidate, caseOf(candidate), editor.getDocument().getText(new TextRange(start, end)));
     }

@@ -18,8 +18,11 @@ import namingassist.engine.NamingCase;
  */
 public class EditActionProviderTest extends BasePlatformTestCase {
 
+    /** source が null なら、既に開いている文書に打つ。 */
     private LookupImpl completeJapanese(String source, String phrase) {
-        myFixture.configureByText("A.java", source);
+        if (source != null) {
+            myFixture.configureByText("A.java", source);
+        }
         myFixture.type(phrase);
         myFixture.completeBasic();
         LookupImpl lookup = (LookupImpl) myFixture.getLookup();
@@ -99,6 +102,19 @@ public class EditActionProviderTest extends BasePlatformTestCase {
         String expected = model.name().render(NamingCase.UPPER_SNAKE);
         System.out.println("[CONST] edited=" + expected);
         myFixture.checkResult("class A { static final int " + expected + "<caret> = 1; }");
+    }
+
+    /** 先頭の数字(2次元配列の「2」)も編集の対象の範囲に含め、確定で数字ごと置き換える。 */
+    public void testTargetIncludesLeadingDigitsAndCommitReplacesThem() {
+        myFixture.configureByText("A.java", "class A { void f() { int 2<caret> } }");
+        LookupImpl lookup = completeJapanese(null, "次元配列");
+        EditTarget target = EditActionProvider.targetFor(pluginItem(lookup, "twoDimensionArray"), lookup);
+        assertNotNull(target);
+        assertEquals("2次元配列", target.originalText());
+        lookup.hideLookup(true);
+
+        assertTrue(target.replaceWith(target.candidate().name()));
+        myFixture.checkResult("class A { void f() { int twoDimensionArray<caret> } }");
     }
 
     private EditTarget targetForPageTitle() {
