@@ -95,14 +95,54 @@ public class TypedLeadCompletionTest extends BasePlatformTestCase {
     }
 
     /**
-     * 小文字の略語(id)は lead として残す(この修正で挙動が変わる入力。以前は句の一部として訳していた)。
+     * 1 語の小文字(id・url・json)の直後が格助詞で始まる日本語なら、略語として全体を句として訳す
+     * (idを取得する → getId。engine に句の全体を渡したときと同じ先頭候補)。
      */
-    public void testLowercaseIdIsKeptAsLead() {
-        String expected = "id" + capitalizeFirst(engineFirst("を取得する", NamingKind.VARIABLE));
-        System.out.println("[LEAD] idを取得する: before(whole phrase)=" + engineFirst("idを取得する", NamingKind.VARIABLE)
-            + " now=" + expected);
-        String text = completeAndChooseFirst("class A { void f() { int id<caret> } }", "を取得する", expected);
+    public void testLowercaseAbbreviationBeforeParticleIsTranslatedAsPartOfPhrase() {
+        String[][] cases = {{"id", "を取得する"}, {"url", "を生成する"}, {"json", "を解析する"}};
+        for (String[] c : cases) {
+            String expected = engineFirst(c[0] + c[1], NamingKind.VARIABLE);
+            System.out.println("[LEAD] " + c[0] + c[1] + " → " + expected);
+            assertFalse("動詞が先頭の名前: " + expected, expected.startsWith(c[0]));
+            String text = completeAndChooseFirst("class A { void f() { int " + c[0] + "<caret> } }", c[1], expected);
+            assertEquals("class A { void f() { int " + expected + " } }", text);
+        }
+        assertEquals("getId", engineFirst("idを取得する", NamingKind.VARIABLE));
+    }
+
+    /** 全角の英字(ｉｄ)も半角(id)と同じに扱う。 */
+    public void testFullWidthLowercaseAbbreviationIsSameAsHalfWidth() {
+        String text = completeAndChooseFirst("class A { void f() { int ｉｄ<caret> } }", "を取得する", "getId");
+        assertEquals("class A { void f() { int getId } }", text);
+    }
+
+    /** 全角の camelCase の英字も半角と同じに lead として残す(挿入は半角)。 */
+    public void testFullWidthCamelLeadIsKeptAsHalfWidth() {
+        String expected = "pageDecision" + capitalizeFirst(engineFirst("ああ", NamingKind.VARIABLE));
+        String text = completeAndChooseFirst("class A { void f() { int ｐａｇｅＤｅｃｉｓｉｏｎ<caret> } }", "ああ", expected);
         assertEquals("class A { void f() { int " + expected + " } }", text);
+    }
+
+    /** 1 語の小文字でも、日本語が助詞で始まらなければ lead を残す(user名前 → userName)。 */
+    public void testLowercaseWordBeforeNonParticleIsKept() {
+        String expected = "user" + capitalizeFirst(engineFirst("名前", NamingKind.VARIABLE));
+        String text = completeAndChooseFirst("class A { void f() { int user<caret> } }", "名前", expected);
+        assertEquals("class A { void f() { int " + expected + " } }", text);
+    }
+
+    /** 助詞で始まる日本語でも、lead が camelCase(1 語の小文字でない)なら lead を残す。 */
+    public void testCamelLeadBeforeParticleIsKept() {
+        String expected = "pageDecision" + capitalizeFirst(engineFirst("を取得する", NamingKind.VARIABLE));
+        String text = completeAndChooseFirst("class A { void f() { int pageDecision<caret> } }", "を取得する", expected);
+        assertEquals("class A { void f() { int " + expected + " } }", text);
+    }
+
+    /** lead と日本語の部分の先頭の語が同じなら重ねない(get + ページタイトルを取得する → getPageTitle)。 */
+    public void testRepeatedLeadingVerbIsNotDoubled() {
+        String text = completeAndChooseFirst("class A { void get<caret>() {} }", "ページタイトルを取得する", "getPageTitle");
+        assertEquals("class A { void getPageTitle() {} }", text);
+        String isText = completeAndChooseFirst("class A { boolean is<caret>() { return true; } }", "有料プランか", "isPaidPlan");
+        assertEquals("class A { boolean isPaidPlan() { return true; } }", isText);
     }
 
     /** 日本語だけの句はこれまでどおり。 */

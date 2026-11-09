@@ -11,7 +11,9 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.progress.ProgressManager;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import namingassist.engine.Candidate;
@@ -61,10 +63,15 @@ public final class JapaneseNamingContributor extends CompletionContributor {
         // 候補はすべて同じ句に一致して重みが並ぶので、engine の優先順を降順の優先度で渡す(無いと辞書順に落ちる)。
         List<Candidate> candidates = suggest(service::engine, phrase, kind);
         int count = candidates.size();
+        Set<String> seen = new HashSet<>(); // lead と重なる語を除くと、別の候補と同じ綴りになり得る(get + getX と x)
         for (int i = 0; i < count; i++) {
             Candidate candidate = candidates.get(i);
+            String inserted = TypedLead.join(lead, candidate.rendered(), namingCase);
+            if (!seen.add(inserted)) {
+                continue;
+            }
             LookupElementBuilder element = LookupElementBuilder
-                .create(candidate, TypedLead.join(lead, candidate.rendered(), namingCase))
+                .create(candidate, inserted)
                 .withLookupString(prefix) // matcher はプレフィックス(数字を含まず、lead を含む)で絞るので、それと一致する形を持たせる
                 .withTypeText(digits + prefix)
                 .withInsertHandler(removeDigits);

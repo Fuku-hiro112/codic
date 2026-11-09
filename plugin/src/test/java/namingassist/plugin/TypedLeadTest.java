@@ -9,7 +9,10 @@ public class TypedLeadTest extends TestCase {
     public void testLeadIsLeadingAsciiIdentifierWithLowercase() {
         assertEquals("pageDecision", TypedLead.leadOf("pageDecisionああ"));
         assertEquals("str", TypedLead.leadOf("str稼働時刻"));
-        assertEquals("id", TypedLead.leadOf("idを取得する"));
+        assertEquals("user", TypedLead.leadOf("user名前"));
+        assertEquals("pageDecision", TypedLead.leadOf("pageDecisionを取得する"));
+        assertEquals("user_id", TypedLead.leadOf("user_idを取得する")); // _ を含むのは 1 語でない
+        assertEquals("pageDecision", TypedLead.leadOf("ｐａｇｅＤｅｃｉｓｉｏｎああ")); // 全角は半角にそろえる
         assertEquals("Page", TypedLead.leadOf("Page観測地点"));
         assertEquals("value1", TypedLead.leadOf("value1次元"));
         assertEquals("_tmp", TypedLead.leadOf("_tmp時刻"));
@@ -24,7 +27,30 @@ public class TypedLeadTest extends TestCase {
         assertEquals("", TypedLead.leadOf("URL一覧"));
         assertEquals("", TypedLead.leadOf("Dモデル"));
         assertEquals("", TypedLead.leadOf("MAX_件数"));
-        assertEquals("", TypedLead.leadOf("ＩＤを取得する")); // 全角は ASCII ではない
+        assertEquals("", TypedLead.leadOf("ＩＤを取得する"));
+        assertEquals("", TypedLead.leadOf("A$B時刻"));
+    }
+
+    /** 1 語の小文字(数字は後ろに続いてよい)+ 格助詞で始まる日本語は、略語として句の一部にする。 */
+    public void testLowercaseWordBeforeParticleIsNotLead() {
+        for (String particle : new String[] {"を", "の", "が", "に", "で", "と", "へ", "から"}) {
+            assertEquals(particle, "", TypedLead.leadOf("id" + particle + "取得"));
+        }
+        assertEquals("", TypedLead.leadOf("urlを生成する"));
+        assertEquals("", TypedLead.leadOf("md5を計算する"));
+        assertEquals("", TypedLead.leadOf("ｉｄを取得する"));
+    }
+
+    public void testJoinDoesNotRepeatLeadingWord() {
+        assertEquals("getPageTitle", TypedLead.join("get", "getPageTitle", NamingCase.CAMEL));
+        assertEquals("isPaidPlan", TypedLead.join("is", "isPaidPlan", NamingCase.CAMEL));
+        assertEquals("get_page_title", TypedLead.join("get", "get_page_title", NamingCase.SNAKE));
+        assertEquals("GET_PAGE_TITLE", TypedLead.join("get", "GET_PAGE_TITLE", NamingCase.UPPER_SNAKE));
+        assertEquals("GetPageTitle", TypedLead.join("Get", "GetPageTitle", NamingCase.PASCAL));
+        // 1 語だけの英語は削らない(lead だけにならない)
+        assertEquals("getGet", TypedLead.join("get", "get", NamingCase.CAMEL));
+        // 先頭の語の一部が一致するだけなら削らない
+        assertEquals("getGetterName", TypedLead.join("get", "getterName", NamingCase.CAMEL));
     }
 
     public void testNoLeadForJapaneseOnlyOrAsciiOnly() {
